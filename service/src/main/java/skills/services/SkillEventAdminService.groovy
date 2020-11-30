@@ -21,12 +21,14 @@ import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import skills.controller.exceptions.ErrorCode
 import skills.controller.exceptions.SkillException
+import skills.controller.result.model.LevelDefinitionRes
 import skills.controller.result.model.RequestResult
 import skills.services.events.CompletionItem
 import skills.services.events.SkillEventResult
 import skills.storage.accessors.ProjDefAccessor
 import skills.storage.model.*
 import skills.storage.repos.*
+import skills.storage.repos.nativeSql.NativeQueriesRepo
 
 @Component
 @Slf4j
@@ -52,6 +54,9 @@ class SkillEventAdminService {
 
     @Autowired
     LevelDefinitionStorageService levelDefService
+
+    @Autowired
+    NativeQueriesRepo nativeQueriesRepo
 
     @Transactional
     RequestResult deleteSkillEvent(String projectId, String skillId, String userId, Long timestamp) {
@@ -94,6 +99,30 @@ class SkillEventAdminService {
         performedSkillRepository.delete(performedSkill)
 
         return res
+    }
+
+    @Transactional
+    RequestResult updateProjectLevelAchievedOnDates(String projectId) {
+        List<LevelDefinitionRes> levels = levelDefService.getLevels(projectId)
+        for (LevelDefinitionRes level : levels) {
+            nativeQueriesRepo.setAchievedOnForProjectLevels(projectId, level.level, level.pointsFrom)
+        }
+        return new RequestResult(success: true, explanation: "Updated achievedOn dates for all [${levels.size()}] levels in the [${projectId}] project")
+    }
+
+    @Transactional
+    RequestResult updateSubjectLevelAchievedOnDates(String projectId, String subjectId) {
+        List<LevelDefinitionRes> levels = levelDefService.getLevels(projectId, subjectId)
+        for (LevelDefinitionRes level : levels) {
+            nativeQueriesRepo.setAchievedOnForSubjectLevels(projectId, subjectId, level.level, level.pointsFrom)
+        }
+        return new RequestResult(success: true, explanation: "Updated achievedOn dates for all [${levels.size()}] levels in the [${subjectId}] subject")
+    }
+
+    @Transactional
+    RequestResult updateSkillAchievedOnDates(String projectId, String skillId, Integer minPointsRequired) {
+        nativeQueriesRepo.setAchievedOnForSkills(projectId, skillId, minPointsRequired)
+        return new RequestResult(success: true, explanation: "Updated achievedOn dates for [${skillId}] skill")
     }
 
     private void deleteProjectLevelIfNecessary(String projectId, String userId, int numberOfExistingEvents) {

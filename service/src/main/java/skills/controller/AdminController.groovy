@@ -886,4 +886,21 @@ class AdminController {
         SkillsValidator.isNotNull(level, "Level")
         return globalBadgesService.isProjectLevelUsedInGlobalBadge(InputSanitizer.sanitize(projectId), level)
     }
+
+    @RequestMapping(value = "/projects/{projectId}/updateAchievedOnDates", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    boolean updateAchievedOnDates(@PathVariable("projectId") String projectId) {
+        SkillsValidator.isNotBlank(projectId, "Project Id")
+        skillEventService.updateProjectLevelAchievedOnDates(projectId)
+        List<SubjectResult> subjects = subjAdminService.getSubjects(projectId)
+        for (SubjectResult subject : subjects) {
+            skillEventService.updateSubjectLevelAchievedOnDates(projectId, subject.subjectId)
+        }
+        List<SkillDefSkinnyRes> skills = skillsAdminService.getSkinnySkills(projectId)
+        for (SkillDefSkinnyRes skill : skills) {
+            skillEventService.updateSkillAchievedOnDates(projectId, skill.skillId, skill.totalPoints)
+        }
+        return true
+    }
+
 }

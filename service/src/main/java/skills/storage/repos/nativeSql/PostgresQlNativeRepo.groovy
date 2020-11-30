@@ -565,4 +565,76 @@ where sum.sumUserId = points.user_id and (sum.sumDay = points.day OR (sum.sumDay
         query.executeUpdate()
     }
 
+    @Override
+    void setAchievedOnForSubjectLevels(String projectId, String subjectId, Integer level, Integer minPointsRequired) {
+
+        String SQL = '''UPDATE user_achievement ua SET achieved_on=innerData.dateAchieved
+        FROM (
+                select ups.user_id, date_level_achieved(sd2.point_increment, ups.performed_on, :minPointsRequired order by ups.performed_on asc) dateAchieved
+                from
+                    skill_definition sd1, skill_definition sd2, skill_relationship_definition srd, user_performed_skill ups
+                where
+                        sd1.skill_id = :skillId and
+                        sd2.skill_id = ups.skill_id and
+                        sd2.id = srd.child_ref_id and
+                        srd.parent_ref_id = sd1.id
+                GROUP BY ups.user_id
+        ) as innerData
+        WHERE  ua.user_id = innerData.user_id and ua.level = :level and ua.skill_id = :skillId and ua.project_id = :projectId and innerData.dateAchieved IS NOT NULL'''
+        Query query = entityManager.createNativeQuery(SQL)
+        query.setParameter('skillId', subjectId)
+        query.setParameter('projectId', projectId)
+        query.setParameter('level', level)
+        query.setParameter('minPointsRequired', minPointsRequired)
+
+        query.executeUpdate()
+    }
+
+
+    @Override
+    void setAchievedOnForProjectLevels(String projectId, Integer level, Integer minPointsRequired) {
+
+        String SQL = '''UPDATE user_achievement ua SET achieved_on=innerData.dateAchieved
+        FROM (
+                select ups.user_id, date_level_achieved(sd.point_increment, ups.performed_on, :minPointsRequired order by ups.performed_on asc) dateAchieved
+                from
+                    skill_definition sd, user_performed_skill ups
+                where
+    
+                    sd.skill_id = ups.skill_id and
+                    ups.project_id = :projectId
+                GROUP BY ups.user_id
+        ) as innerData
+        WHERE  ua.user_id = innerData.user_id and ua.level = :level and ua.skill_id IS NULL and ua.project_id = :projectId and innerData.dateAchieved IS NOT NULL'''
+        Query query = entityManager.createNativeQuery(SQL)
+        query.setParameter('projectId', projectId)
+        query.setParameter('level', level)
+        query.setParameter('minPointsRequired', minPointsRequired)
+
+        query.executeUpdate()
+    }
+
+
+    @Override
+    void setAchievedOnForSkills(String projectId, String skillId, Integer minPointsRequired) {
+
+        String SQL = '''UPDATE user_achievement ua SET achieved_on=innerData.dateAchieved
+        FROM (
+                select ups.user_id, date_level_achieved(sd.point_increment, ups.performed_on, :minPointsRequired order by ups.performed_on asc) dateAchieved
+                from
+                    skill_definition sd, user_performed_skill ups
+                where
+                    sd.skill_id = :skillId and
+                    sd.skill_id = ups.skill_id and
+                    ups.project_id = :projectId
+                GROUP BY ups.user_id
+        ) as innerData
+        WHERE  ua.user_id = innerData.user_id and ua.level IS NULL and ua.skill_id = :skillId and ua.project_id = :projectId and innerData.dateAchieved IS NOT NULL'''
+        Query query = entityManager.createNativeQuery(SQL)
+        query.setParameter('projectId', projectId)
+        query.setParameter('skillId', skillId)
+        query.setParameter('minPointsRequired', minPointsRequired)
+
+        query.executeUpdate()
+    }
 }
