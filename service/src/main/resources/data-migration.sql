@@ -14,10 +14,10 @@
 -- limitations under the License.
 --
 
-drop aggregate  date_level_achieved(point_increment int, date_achieved timestamp without time zone, minPointsRequired int);
-drop function date_level_achieved_final_func;
-drop function date_level_achieved_func (agg_state date_achieved_points, point_increment int, date_achieved timestamp without time zone, minPointsRequired int);
-drop type date_achieved_points;
+drop aggregate if exists date_level_achieved(point_increment int, date_achieved timestamp without time zone, minPointsRequired int);
+drop function if exists date_level_achieved_final_func;
+drop function if exists date_level_achieved_func (agg_state date_achieved_points, point_increment int, date_achieved timestamp without time zone, minPointsRequired int);
+drop type if exists date_achieved_points;
 
 
 create type date_achieved_points as (
@@ -74,15 +74,15 @@ create aggregate date_level_achieved (point_increment int, date_achieved timesta
 
 
 
-UPDATE user_achievement ua SET achieved_on=innerData.dateAchieved
-FROM (
-         select ups.user_id, date_level_achieved(sd2.point_increment, ups.performed_on, 40 order by ups.performed_on asc) dateAchieved
-         from
-             skill_definition sd2, skill_relationship_definition srd, user_performed_skill ups
-         where
-                 sd2.skill_id = ups.skill_id and
-                 sd2.id = srd.child_ref_id and
-                 srd.parent_ref_id = '101'
-         GROUP BY ups.user_id
-     ) as innerData
-WHERE  ua.user_id = innerData.user_id and ua.level = 4 and ua.skill_id = 'Subject Id';
+-- UPDATE user_achievement ua SET achieved_on=innerData.dateAchieved
+-- FROM (
+--          select ups.user_id, date_level_achieved(sd2.point_increment, ups.performed_on, 40 order by ups.performed_on asc) dateAchieved
+--          from
+--              skill_definition sd2, skill_relationship_definition srd, user_performed_skill ups
+--          where
+--                  sd2.skill_id = ups.skill_id and
+--                  sd2.id = srd.child_ref_id and
+--                  srd.parent_ref_id = '101'
+--          GROUP BY ups.user_id
+--      ) as innerData
+-- WHERE  ua.user_id = innerData.user_id and ua.level = 4 and ua.skill_id = 'Subject Id';

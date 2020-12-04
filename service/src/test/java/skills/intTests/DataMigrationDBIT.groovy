@@ -15,7 +15,7 @@
  */
 package skills.intTests
 
-import groovy.json.JsonOutput
+
 import groovy.util.logging.Slf4j
 import liquibase.Contexts
 import liquibase.LabelExpression
@@ -128,12 +128,6 @@ class DataMigrationDBIT extends DefaultIntSpec {
         !resetTokensPostMigration
     }
 
-    private insertPreMigrationTestData(String sqlFilePath) {
-        new ClassPathResource(sqlFilePath).getFile().eachLine { sqlStmt ->
-            jdbcTemplate.execute(sqlStmt)
-        }
-    }
-
     def "validate migration2"() {
         Database database = DatabaseFactory.getInstance().findCorrectDatabaseImplementation(new JdbcConnection(dataSource.getConnection()))
         Liquibase liquibase = new Liquibase(StringUtils.removeStart(changeLog.getPath(), "classpath:"), new ClassLoaderResourceAccessor(), database)
@@ -152,6 +146,48 @@ class DataMigrationDBIT extends DefaultIntSpec {
         }
     }
 
+    def "validate post migration2"() {
+        Database database = DatabaseFactory.getInstance().findCorrectDatabaseImplementation(new JdbcConnection(dataSource.getConnection()))
+        Liquibase liquibase = new Liquibase(StringUtils.removeStart(changeLog.getPath(), "classpath:"), new ClassLoaderResourceAccessor(), database)
+        liquibase.update(new Contexts('migration1'), new LabelExpression())
+
+        insertPreMigrationTestData("migration2.1.sql")
+        def resBefore = jdbcTemplate.queryForList("select * from user_achievement")
+        when:
+        liquibase.update(new Contexts('migration2'), new LabelExpression())
+        def resAfter1 = jdbcTemplate.queryForList("select * from user_achievement")
+        def dateActuallyPerformed = jdbcTemplate.queryForList("select * from user_performed_skill").first()["performed_on"]
+
+        // add new plpgsql functions and update user_achievement dates
+        executeSqlFile('data-migration.sql')
+
+        // execute updateAchievedOnDates
+        skillsService = createService()
+        skillsService.updateAchievedOnDates('TestProject1')
+        def resAfter2 = jdbcTemplate.queryForList("select * from user_achievement")
+
+        then:
+        resBefore.findAll({it["achieved_on".toUpperCase()]}).size() == 0
+        resAfter1.findAll({it["achieved_on".toUpperCase()]}).size() == 11
+        resAfter1.each {
+            assert it["achieved_on".toUpperCase()] == it["created".toUpperCase()]
+        }
+        resAfter1.first()["performed_on"] !== dateActuallyPerformed
+        resAfter2.each {
+            assert it["achieved_on".toUpperCase()] == dateActuallyPerformed
+        }
+    }
+
+    private insertPreMigrationTestData(String sqlFilePath) {
+        new ClassPathResource(sqlFilePath).getFile().eachLine { sqlStmt ->
+            jdbcTemplate.execute(sqlStmt)
+        }
+    }
+
+    private executeSqlFile(String sqlFilePath) {
+        String sql = new ClassPathResource(sqlFilePath).getFile().text;
+        jdbcTemplate.execute(sql)
+    }
     private List<Map<String, Object>> getSkillDefinitionFromDB(String projectId) {
         jdbcTemplate.queryForList("select * from skill_definition where project_id='${projectId}'")
     }

@@ -125,6 +125,10 @@ class SkillsService {
         wsHelper.adminGet("/projects/${projectId}/projectSearch?nameQuery=${query}")
     }
 
+    def updateAchievedOnDates(String projectId) {
+        wsHelper.adminGet("/projects/${projectId}/updateAchievedOnDates")
+    }
+
     @Profile
     def moveProjectUp(Map props){
         wsHelper.adminPatch(getProjectUrl(props.projectId), '{"action": "DisplayOrderUp"}')
