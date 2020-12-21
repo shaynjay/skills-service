@@ -891,15 +891,28 @@ class AdminController {
     @ResponseBody
     boolean updateAchievedOnDates(@PathVariable("projectId") String projectId) {
         SkillsValidator.isNotBlank(projectId, "Project Id")
+        log.info("Updating acheived on dates for project [${projectId}]")
         skillEventService.updateProjectLevelAchievedOnDates(projectId)
+        log.info('Project Levels Updated....')
         List<SubjectResult> subjects = subjAdminService.getSubjects(projectId)
+        int subjectSize = subjects.size()
+        int theCounter = 0
+        log.info("Updating [${subjectSize}] subjects")
         for (SubjectResult subject : subjects) {
+            theCounter++
+            log.info("Updating subject [${subject.subjectId}] (${theCounter} out of ${subjectSize})")
             skillEventService.updateSubjectLevelAchievedOnDates(projectId, subject.subjectId)
         }
         List<SkillDefSkinnyRes> skills = skillsAdminService.getSkinnySkills(projectId)
+        int skillsSize = skills.size()
+        theCounter = 0
+        log.info("Updating [${skillsSize}] skills")
         for (SkillDefSkinnyRes skill : skills) {
+            theCounter++
+            log.info("Updating skill [${skill.skillId}] (${theCounter} out of ${skillsSize})")
             skillEventService.updateSkillAchievedOnDates(projectId, skill.skillId, skill.totalPoints)
         }
+        log.info("done")
         return true
     }
 

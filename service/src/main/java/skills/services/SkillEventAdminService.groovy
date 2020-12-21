@@ -105,6 +105,7 @@ class SkillEventAdminService {
     RequestResult updateProjectLevelAchievedOnDates(String projectId) {
         List<LevelDefinitionRes> levels = levelDefService.getLevels(projectId)
         for (LevelDefinitionRes level : levels) {
+            log.info("Updating level [${level.level}]")
             nativeQueriesRepo.setAchievedOnForProjectLevels(projectId, level.level, level.pointsFrom)
         }
         return new RequestResult(success: true, explanation: "Updated achievedOn dates for all [${levels.size()}] levels in the [${projectId}] project")
