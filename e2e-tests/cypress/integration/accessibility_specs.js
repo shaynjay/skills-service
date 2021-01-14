@@ -250,11 +250,12 @@ describe('Accessibility Tests', () => {
     cy.visit('/');
     cy.injectAxe()
     //view project
-    cy.contains('Manage').click();
+    cy.get('[data-cy="projCard_MyNewtestProject_manageBtn"]').click();
     //view subject
-    cy.contains('Manage').click();
+    cy.get('[data-cy="subjCard_subj1_manageBtn"]').click();
     //view skill
-    cy.get('[data-cy=manageSkillBtn]').eq(1).click();
+    cy.get('[data-cy=manageSkillBtn_skill1]').click();
+    // data-cy="manageSkillBtn"
     cy.contains('Help URL');
     cy.customLighthouse();
     cy.customA11y();
